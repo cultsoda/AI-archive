@@ -149,11 +149,14 @@ export default function DocumentArchive() {
 
   // Login form state
   const [loginForm, setLoginForm] = useState({ email: "", password: "" })
+  
+  // 수정된 회원가입 폼 상태 - role 제거, adminKey 추가
   const [signupForm, setSignupForm] = useState({
     name: "",
     email: "",
     password: "",
-    role: "viewer" as "admin" | "viewer",
+    confirmPassword: "",
+    adminKey: ""
   })
 
   // Document form state
@@ -209,20 +212,48 @@ export default function DocumentArchive() {
     }, 1000)
   }
 
+  // 수정된 회원가입 핸들러
   const handleSignup = (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // 유효성 검사
+    if (!signupForm.name || !signupForm.email || !signupForm.password) {
+      alert('모든 필드를 입력해주세요.')
+      return
+    }
+    
+    if (signupForm.password !== signupForm.confirmPassword) {
+      alert('비밀번호가 일치하지 않습니다.')
+      return
+    }
+    
+    if (signupForm.password.length < 6) {
+      alert('비밀번호는 6자 이상이어야 합니다.')
+      return
+    }
+
     setIsLoading(true)
 
     setTimeout(() => {
+      // adminKey 확인하여 권한 결정
+      const role = signupForm.adminKey === '164645' ? 'admin' : 'viewer'
+      
       const newUser: AppUser = {
         id: Date.now().toString(),
         name: signupForm.name,
         email: signupForm.email,
-        role: signupForm.role,
+        role: role,
       }
+      
       setUser(newUser)
       setShowSignupModal(false)
-      setSignupForm({ name: "", email: "", password: "", role: "viewer" })
+      setSignupForm({ 
+        name: "", 
+        email: "", 
+        password: "", 
+        confirmPassword: "", 
+        adminKey: "" 
+      })
       setIsLoading(false)
     }, 1000)
   }
@@ -670,20 +701,6 @@ export default function DocumentArchive() {
                 문서 아카이브에 오신 것을 환영합니다
               </h2>
               <p className="text-gray-600 dark:text-gray-400 mb-6 text-sm sm:text-base">
-                문서를 보려면 로그인이 필요합니다.
-              </p>
-              <Button onClick={() => setShowLoginModal(true)} className="bg-blue-600 hover:bg-blue-700">
-                <LogIn className="h-4 w-4 mr-2" />
-                로그인하기
-              </Button>
-            </div>
-          ) : filteredDocuments.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-96 text-center px-4">
-              <FileText className="h-12 w-12 sm:h-16 sm:w-16 text-gray-400 mb-4" />
-              <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                문서가 없습니다
-              </h2>
-              <p className="text-gray-600 dark:text-gray-400 mb-6 text-sm sm:text-base">
                 {searchTerm || selectedCategory !== "all"
                   ? "검색 조건에 맞는 문서가 없습니다."
                   : "아직 업로드된 문서가 없습니다."}
@@ -784,6 +801,180 @@ export default function DocumentArchive() {
           )}
         </main>
       </div>
+
+      {/* 로그인 모달 */}
+      <Dialog open={showLoginModal} onOpenChange={setShowLoginModal}>
+        <DialogContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+          <DialogHeader>
+            <DialogTitle>로그인</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <Label htmlFor="email">이메일</Label>
+              <Input
+                id="email"
+                type="email"
+                value={loginForm.email}
+                onChange={(e) => setLoginForm({...loginForm, email: e.target.value})}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="password">비밀번호</Label>
+              <Input
+                id="password"
+                type="password"
+                value={loginForm.password}
+                onChange={(e) => setLoginForm({...loginForm, password: e.target.value})}
+                required
+              />
+            </div>
+            
+            <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg text-sm">
+              <p className="font-medium text-blue-800 dark:text-blue-300 mb-1">테스트 계정:</p>
+              <p className="text-blue-700 dark:text-blue-400">관리자: admin@example.com / 아무 비밀번호</p>
+              <p className="text-blue-700 dark:text-blue-400">일반: 다른 이메일 / 아무 비밀번호</p>
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <Button 
+                type="submit" 
+                disabled={isLoading}
+                className="flex-1 bg-blue-600 hover:bg-blue-700"
+              >
+                {isLoading ? '로그인 중...' : '로그인'}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowLoginModal(false)}
+              >
+                취소
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* 회원가입 모달 - 새로 추가! */}
+      <Dialog open={showSignupModal} onOpenChange={setShowSignupModal}>
+        <DialogContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+          <DialogHeader>
+            <DialogTitle>회원가입</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSignup} className="space-y-4">
+            <div>
+              <Label htmlFor="signupName">이름</Label>
+              <Input
+                id="signupName"
+                type="text"
+                value={signupForm.name}
+                onChange={(e) => setSignupForm({...signupForm, name: e.target.value})}
+                required
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="signupEmail">이메일</Label>
+              <Input
+                id="signupEmail"
+                type="email"
+                value={signupForm.email}
+                onChange={(e) => setSignupForm({...signupForm, email: e.target.value})}
+                required
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="signupPassword">비밀번호</Label>
+              <Input
+                id="signupPassword"
+                type="password"
+                value={signupForm.password}
+                onChange={(e) => setSignupForm({...signupForm, password: e.target.value})}
+                required
+                minLength={6}
+              />
+              <p className="text-xs text-gray-500 mt-1">6자 이상 입력해주세요</p>
+            </div>
+            
+            <div>
+              <Label htmlFor="confirmPassword">비밀번호 확인</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                value={signupForm.confirmPassword}
+                onChange={(e) => setSignupForm({...signupForm, confirmPassword: e.target.value})}
+                required
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="adminKey">관리자 키 (선택사항)</Label>
+              <Input
+                id="adminKey"
+                type="password"
+                placeholder="관리자 권한을 원하면 입력하세요"
+                value={signupForm.adminKey}
+                onChange={(e) => setSignupForm({...signupForm, adminKey: e.target.value})}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                관리자 키를 입력하면 admin 권한으로 가입됩니다. 입력하지 않으면 viewer 권한입니다.
+              </p>
+            </div>
+
+            <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg text-sm">
+              <p className="font-medium text-green-800 dark:text-green-300 mb-1">가입 정보:</p>
+              <p className="text-green-700 dark:text-green-400">
+                • 기본 권한: 뷰어 (문서 읽기만 가능)
+              </p>
+              <p className="text-green-700 dark:text-green-400">
+                • 관리자 키 입력 시: 관리자 (업로드, 수정, 삭제 가능)
+              </p>
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <Button 
+                type="submit" 
+                disabled={isLoading}
+                className="flex-1 bg-green-600 hover:bg-green-700"
+              >
+                {isLoading ? '가입 중...' : '회원가입'}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setShowSignupModal(false)
+                  setSignupForm({ 
+                    name: "", 
+                    email: "", 
+                    password: "", 
+                    confirmPassword: "", 
+                    adminKey: "" 
+                  })
+                }}
+              >
+                취소
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
-}
+}">
+                문서를 보려면 로그인이 필요합니다.
+              </p>
+              <Button onClick={() => setShowLoginModal(true)} className="bg-blue-600 hover:bg-blue-700">
+                <LogIn className="h-4 w-4 mr-2" />
+                로그인하기
+              </Button>
+            </div>
+          ) : filteredDocuments.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-96 text-center px-4">
+              <FileText className="h-12 w-12 sm:h-16 sm:w-16 text-gray-400 mb-4" />
+              <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                문서가 없습니다
+              </h2>
+              <p className="text-gray-600 dark:text-gray-400 mb-6 text-sm sm:text-base
