@@ -71,9 +71,13 @@ export default function DocumentArchivePage() {
       doc.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
       doc.author.toLowerCase().includes(searchTerm.toLowerCase())
     
-    const matchesCategory = selectedCategory === 'all' || doc.category === selectedCategory
-    
-    return matchesSearch && matchesCategory
+    // 검색어가 있으면 전체 문서에서 검색, 없으면 카테고리 필터 적용
+    if (searchTerm.trim()) {
+      return matchesSearch
+    } else {
+      const matchesCategory = selectedCategory === 'all' || doc.category === selectedCategory
+      return matchesCategory
+    }
   })
 
   // 카테고리별 문서 그룹화
@@ -193,19 +197,19 @@ export default function DocumentArchivePage() {
             /* 문서 목록 */
             <div className="space-y-6 sm:space-y-8">
               {/* 검색 결과 헤더 */}
-              {(searchTerm || selectedCategory !== 'all') && (
-                <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div>
-                      <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                        검색 결과
-                      </h2>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {searchTerm && `"${searchTerm}" 검색 • `}
-                        {selectedCategory !== 'all' && `${selectedCategory} 카테고리 • `}
-                        총 {filteredDocuments.length}개 문서
-                      </p>
-                    </div>
+            {(searchTerm || (!searchTerm && selectedCategory !== 'all')) && (
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                      {searchTerm ? '검색 결과' : '필터 결과'}
+                    </h2>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      {searchTerm && `"${searchTerm}" 전체 검색 • `}
+                      {!searchTerm && selectedCategory !== 'all' && `${selectedCategory} 카테고리 • `}
+                      총 {filteredDocuments.length}개 문서
+                    </p>
+                  </div>
                     <Button
                       variant="outline"
                       onClick={() => {
