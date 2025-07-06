@@ -97,11 +97,12 @@ export const documentService = {
   async createDocument(data: DocumentForm & { authorUid: string; author: string }): Promise<string> {
     const documentsRef = collection(db, COLLECTIONS.DOCUMENTS)
     
-    // undefined 값들을 제거하고 정리된 데이터 생성
+    // 정리된 데이터 생성 (모든 필드 명시적으로 포함)
     const cleanData: Record<string, any> = {
       title: data.title,
       content: data.content,
       category: data.category,
+      documentType: data.documentType || 'text', // 🔥 기본값 추가
       author: data.author,
       authorUid: data.authorUid,
       isLocked: data.isLocked || false,
@@ -117,6 +118,8 @@ export const documentService = {
       cleanData.password = data.password
     }
     
+    console.log('Firestore에 저장할 데이터:', cleanData) // 디버깅용
+    
     const docRef = await addDoc(documentsRef, cleanData)
     return docRef.id
   },
@@ -127,10 +130,26 @@ export const documentService = {
     const docSnap = await getDoc(docRef)
     
     if (docSnap.exists()) {
-      return {
+      const data = docSnap.data()
+      const document: Document = {
         id: docSnap.id,
-        ...docSnap.data()
-      } as Document
+        title: data.title || '',
+        content: data.content || '',
+        category: data.category || '',
+        documentType: data.documentType || 'text', // 🔥 기본값 추가
+        author: data.author || '',
+        authorUid: data.authorUid || '',
+        createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+        updatedAt: data.updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+        isLocked: data.isLocked || false,
+        password: data.password || '',
+        tags: data.tags || [],
+        linkedDocuments: data.linkedDocuments || [],
+        comments: data.comments || [],
+      }
+      
+      console.log('Firestore에서 읽어온 문서:', document) // 디버깅용
+      return document
     }
     return null
   },
@@ -165,17 +184,37 @@ export const documentService = {
     }
 
     const querySnapshot = await getDocs(q)
-    return querySnapshot.docs.map((doc: DocumentSnapshot<DocumentData>) => ({
-      id: doc.id,
-      ...doc.data()
-    })) as Document[]
+    const documents = querySnapshot.docs.map((docSnap: DocumentSnapshot<DocumentData>) => {
+      const data = docSnap.data()
+      const document: Document = {
+        id: docSnap.id,
+        title: data.title || '',
+        content: data.content || '',
+        category: data.category || '',
+        documentType: data.documentType || 'text', // 🔥 기본값 추가
+        author: data.author || '',
+        authorUid: data.authorUid || '',
+        createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+        updatedAt: data.updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+        isLocked: data.isLocked || false,
+        password: data.password || '',
+        tags: data.tags || [],
+        linkedDocuments: data.linkedDocuments || [],
+        comments: data.comments || [],
+      }
+      
+      return document
+    })
+    
+    console.log('Firestore에서 읽어온 모든 문서들:', documents) // 디버깅용
+    return documents
   },
 
   // 문서 업데이트
   async updateDocument(id: string, data: Partial<DocumentForm>): Promise<void> {
     const docRef = doc(db, COLLECTIONS.DOCUMENTS, id)
     
-    // undefined 값들을 제거하고 정리된 데이터 생성
+    // 정리된 데이터 생성
     const cleanData: Record<string, any> = {
       updatedAt: serverTimestamp(),
     }
@@ -184,9 +223,12 @@ export const documentService = {
     if (data.title !== undefined) cleanData.title = data.title
     if (data.content !== undefined) cleanData.content = data.content
     if (data.category !== undefined) cleanData.category = data.category
+    if (data.documentType !== undefined) cleanData.documentType = data.documentType // 🔥 추가
     if (data.isLocked !== undefined) cleanData.isLocked = data.isLocked
     if (data.tags !== undefined) cleanData.tags = data.tags
     if (data.password !== undefined) cleanData.password = data.password
+    
+    console.log('Firestore 업데이트 데이터:', cleanData) // 디버깅용
     
     await updateDoc(docRef, cleanData)
   },
@@ -203,10 +245,29 @@ export const documentService = {
     const q = query(documentsRef, orderBy('createdAt', 'desc'))
     
     return onSnapshot(q, (snapshot: QuerySnapshot<DocumentData>) => {
-      const documents = snapshot.docs.map((doc: DocumentSnapshot<DocumentData>) => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Document[]
+      const documents = snapshot.docs.map((docSnap: DocumentSnapshot<DocumentData>) => {
+        const data = docSnap.data()
+        const document: Document = {
+          id: docSnap.id,
+          title: data.title || '',
+          content: data.content || '',
+          category: data.category || '',
+          documentType: data.documentType || 'text', // 🔥 기본값 추가
+          author: data.author || '',
+          authorUid: data.authorUid || '',
+          createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+          updatedAt: data.updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+          isLocked: data.isLocked || false,
+          password: data.password || '',
+          tags: data.tags || [],
+          linkedDocuments: data.linkedDocuments || [],
+          comments: data.comments || [],
+        }
+        
+        return document
+      })
+      
+      console.log('실시간 업데이트된 문서들:', documents) // 디버깅용
       callback(documents)
     })
   }
