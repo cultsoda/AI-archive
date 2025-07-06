@@ -12,6 +12,16 @@ import { useCategories } from '@/components/categories/CategoryProvider'
 import { useAuth } from '@/components/auth/AuthProvider'
 import type { Document, DocumentForm } from '@/lib/types'
 
+// 문서 타입 정의
+export type DocumentType = 'text' | 'html' | 'csv' | 'markdown'
+
+interface DocumentTypeOption {
+  value: DocumentType
+  label: string
+  description: string
+  icon: string
+}
+
 interface UploadModalProps {
   isOpen: boolean
   onClose: () => void
@@ -59,7 +69,9 @@ export function UploadModal({
         password: '',
         tags: [],
       })
-      setTagInput('')
+      setDocumentType('text')
+              setDocumentType('text')
+        setTagInput('')
     }
     setError(null)
   }, [editingDocument, isOpen])
@@ -106,6 +118,7 @@ export function UploadModal({
         title: form.title.trim(),
         content: form.content.trim(),
         category: form.category,
+        documentType: documentType,
         isLocked: form.isLocked,
         tags: tagInput.split(',').map(tag => tag.trim()).filter(tag => tag !== ''),
       }
@@ -147,6 +160,55 @@ export function UploadModal({
     }
   }
 
+  // 내용 자동 분석해서 문서 타입 감지
+  const detectDocumentType = (content: string): DocumentType => {
+    const trimmedContent = content.trim()
+    
+    // HTML 감지
+    if (trimmedContent.includes('<!DOCTYPE') || 
+        (trimmedContent.includes('<html') && trimmedContent.includes('</html>')) ||
+        (trimmedContent.includes('<head>') || trimmedContent.includes('<body>'))) {
+      return 'html'
+    }
+    
+    // CSV 감지 (간단한 휴리스틱)
+    const lines = trimmedContent.split('\n').filter(line => line.trim())
+    if (lines.length > 1) {
+      const firstLine = lines[0]
+      const secondLine = lines[1]
+      const firstCommaCount = (firstLine.match(/,/g) || []).length
+      const secondCommaCount = (secondLine.match(/,/g) || []).length
+      
+      // 첫 두 줄이 비슷한 수의 쉼표를 가지고 있으면 CSV로 판단
+      if (firstCommaCount > 0 && Math.abs(firstCommaCount - secondCommaCount) <= 1) {
+        return 'csv'
+      }
+    }
+    
+    // Markdown 감지
+    if (trimmedContent.includes('# ') || 
+        trimmedContent.includes('## ') ||
+        trimmedContent.includes('**') ||
+        trimmedContent.includes('```') ||
+        trimmedContent.includes('- ') ||
+        trimmedContent.includes('* ')) {
+      return 'markdown'
+    }
+    
+    return 'text'
+  }
+
+  // 내용이 변경될 때 문서 타입 자동 감지
+  const handleContentChange = (content: string) => {
+    setForm({ ...form, content })
+    
+    // 내용이 충분히 있을 때만 자동 감지
+    if (content.trim().length > 50) {
+      const detectedType = detectDocumentType(content)
+      setDocumentType(detectedType)
+    }
+  }
+
   const handleTagInputChange = (value: string) => {
     setTagInput(value)
   }
@@ -184,6 +246,42 @@ export function UploadModal({
               required
               disabled={isLoading}
             />
+          </div>
+
+          {/* 문서 타입 선택 */}
+          <div className="space-y-2">
+            <Label htmlFor="documentType" className="text-gray-700 dark:text-gray-300 font-medium">
+              문서 타입 *
+            </Label>
+            <Select
+              value={documentType}
+              onValueChange={(value: DocumentType) => setDocumentType(value)}
+              disabled={isLoading}
+            >
+              <SelectTrigger className="w-full bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100">
+                <SelectValue placeholder="문서 타입을 선택하세요" />
+              </SelectTrigger>
+              <SelectContent className="bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600">
+                {documentTypeOptions.map((option) => (
+                  <SelectItem 
+                    key={option.value} 
+                    value={option.value}
+                    className="text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-600 focus:bg-gray-100 dark:focus:bg-gray-600"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <span className="text-lg">{option.icon}</span>
+                      <div className="flex flex-col">
+                        <span className="font-medium">{option.label}</span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">{option.description}</span>
+                      </div>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              내용을 입력하면 자동으로 감지되지만, 직접 선택할 수도 있습니다
+            </p>
           </div>
 
           {/* 카테고리 */}
@@ -267,13 +365,32 @@ export function UploadModal({
             <Textarea
               id="content"
               value={form.content}
-              onChange={(e) => setForm({ ...form, content: e.target.value })}
+              onChange={(e) => handleContentChange(e.target.value)}
               className="bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100 min-h-[200px] resize-y"
               placeholder="문서 내용을 입력하세요"
               rows={8}
               required
               disabled={isLoading}
             />
+            {/* 문서 타입 감지 알림 */}
+            {form.content.trim().length > 50 && (
+              <div className="flex items-center space-x-2 text-sm">
+                <span className="text-gray-600 dark:text-gray-400">감지된 타입:</span>
+                <span className="flex items-center space-x-1 text-blue-600 dark:text-blue-400">
+                  <span>{documentTypeOptions.find(opt => opt.value === detectDocumentType(form.content))?.icon}</span>
+                  <span>{documentTypeOptions.find(opt => opt.value === detectDocumentType(form.content))?.label}</span>
+                </span>
+                {detectDocumentType(form.content) !== documentType && (
+                  <button
+                    type="button"
+                    onClick={() => setDocumentType(detectDocumentType(form.content))}
+                    className="text-blue-600 dark:text-blue-400 hover:underline text-xs"
+                  >
+                    적용하기
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
           {/* 보안 설정 */}

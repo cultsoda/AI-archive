@@ -1,5 +1,8 @@
 // lib/types.ts
 
+// 문서 타입 정의
+export type DocumentType = 'text' | 'html' | 'csv' | 'markdown'
+
 export interface Category {
   id: string
   name: string
@@ -15,6 +18,7 @@ export interface Document {
   title: string
   content: string
   category: string
+  documentType?: DocumentType // 새로 추가
   author: string
   authorUid: string
   createdAt: string
@@ -73,6 +77,7 @@ export interface DocumentForm {
   title: string
   content: string
   category: string
+  documentType?: DocumentType // 새로 추가
   isLocked?: boolean
   password?: string
   tags?: string[]
@@ -261,16 +266,3 @@ export interface NotificationAction {
   action: () => void
   variant?: 'default' | 'destructive'
 }
-
-export const CATEGORY_COLORS = [
-  'bg-blue-100 text-blue-800',
-  'bg-green-100 text-green-800',
-  'bg-purple-100 text-purple-800',
-  'bg-red-100 text-red-800',
-  'bg-yellow-100 text-yellow-800',
-  'bg-indigo-100 text-indigo-800',
-  'bg-pink-100 text-pink-800',
-  'bg-gray-100 text-gray-800',
-] as const
-
-export type CategoryColor = typeof CATEGORY_COLORS[number]

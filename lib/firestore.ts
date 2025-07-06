@@ -16,6 +16,11 @@ import {
   serverTimestamp,
   DocumentSnapshot,
   QuerySnapshot,
+  DocumentData,
+  CollectionReference,
+  DocumentReference,
+  Query,
+  Unsubscribe
 } from 'firebase/firestore'
 import { db } from './firebase'
 import type {
@@ -27,6 +32,7 @@ import type {
   FilterOptions,
   SortOptions,
   PaginatedResponse,
+  DocumentType,
 } from './types'
 
 // 컬렉션 참조
@@ -78,7 +84,7 @@ export const userService = {
     const usersRef = collection(db, COLLECTIONS.USERS)
     const querySnapshot = await getDocs(usersRef)
     
-    return querySnapshot.docs.map(doc => ({
+    return querySnapshot.docs.map((doc: DocumentSnapshot<DocumentData>) => ({
       uid: doc.id,
       ...doc.data()
     })) as UserProfile[]
@@ -92,7 +98,7 @@ export const documentService = {
     const documentsRef = collection(db, COLLECTIONS.DOCUMENTS)
     
     // undefined 값들을 제거하고 정리된 데이터 생성
-    const cleanData: any = {
+    const cleanData: Record<string, any> = {
       title: data.title,
       content: data.content,
       category: data.category,
@@ -136,7 +142,7 @@ export const documentService = {
     limit?: number
   }): Promise<Document[]> {
     const documentsRef = collection(db, COLLECTIONS.DOCUMENTS)
-    let q = query(documentsRef)
+    let q: Query<DocumentData> = query(documentsRef)
 
     // 필터 적용
     if (options?.filter?.category) {
@@ -159,7 +165,7 @@ export const documentService = {
     }
 
     const querySnapshot = await getDocs(q)
-    return querySnapshot.docs.map(doc => ({
+    return querySnapshot.docs.map((doc: DocumentSnapshot<DocumentData>) => ({
       id: doc.id,
       ...doc.data()
     })) as Document[]
@@ -170,7 +176,7 @@ export const documentService = {
     const docRef = doc(db, COLLECTIONS.DOCUMENTS, id)
     
     // undefined 값들을 제거하고 정리된 데이터 생성
-    const cleanData: any = {
+    const cleanData: Record<string, any> = {
       updatedAt: serverTimestamp(),
     }
 
@@ -192,12 +198,12 @@ export const documentService = {
   },
 
   // 실시간 문서 리스너
-  onDocumentsChange(callback: (documents: Document[]) => void) {
+  onDocumentsChange(callback: (documents: Document[]) => void): Unsubscribe {
     const documentsRef = collection(db, COLLECTIONS.DOCUMENTS)
     const q = query(documentsRef, orderBy('createdAt', 'desc'))
     
-    return onSnapshot(q, (snapshot) => {
-      const documents = snapshot.docs.map(doc => ({
+    return onSnapshot(q, (snapshot: QuerySnapshot<DocumentData>) => {
+      const documents = snapshot.docs.map((doc: DocumentSnapshot<DocumentData>) => ({
         id: doc.id,
         ...doc.data()
       })) as Document[]
@@ -228,7 +234,7 @@ export const categoryService = {
     const q = query(categoriesRef, orderBy('name'))
     const querySnapshot = await getDocs(q)
     
-    return querySnapshot.docs.map(doc => ({
+    return querySnapshot.docs.map((doc: DocumentSnapshot<DocumentData>) => ({
       id: doc.id,
       ...doc.data()
     })) as Category[]
@@ -269,12 +275,12 @@ export const categoryService = {
   },
 
   // 실시간 카테고리 리스너
-  onCategoriesChange(callback: (categories: Category[]) => void) {
+  onCategoriesChange(callback: (categories: Category[]) => void): Unsubscribe {
     const categoriesRef = collection(db, COLLECTIONS.CATEGORIES)
     const q = query(categoriesRef, orderBy('name'))
     
-    return onSnapshot(q, (snapshot) => {
-      const categories = snapshot.docs.map(doc => ({
+    return onSnapshot(q, (snapshot: QuerySnapshot<DocumentData>) => {
+      const categories = snapshot.docs.map((doc: DocumentSnapshot<DocumentData>) => ({
         id: doc.id,
         ...doc.data()
       })) as Category[]
