@@ -1,10 +1,10 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Copy, ExternalLink, Eye, Code, Maximize2 } from 'lucide-react'
+import { Copy, ExternalLink, Eye, Code, Maximize2, RefreshCw } from 'lucide-react'
 import type { Document, DocumentType } from '@/lib/types'
 
 interface DocumentViewerProps {
@@ -55,28 +55,20 @@ function CSVTable({ content }: { content: string }) {
   )
 }
 
-// 마크다운 간단 렌더링 (기본적인 것들만)
+// 마크다운 간단 렌더링
 function MarkdownRenderer({ content }: { content: string }) {
   const renderMarkdown = (text: string) => {
     return text
-      // 헤딩
       .replace(/^### (.*$)/gim, '<h3 class="text-lg font-semibold mt-4 mb-2 text-gray-900 dark:text-gray-100">$1</h3>')
       .replace(/^## (.*$)/gim, '<h2 class="text-xl font-semibold mt-6 mb-3 text-gray-900 dark:text-gray-100">$1</h2>')
       .replace(/^# (.*$)/gim, '<h1 class="text-2xl font-bold mt-6 mb-4 text-gray-900 dark:text-gray-100">$1</h1>')
-      // 볼드
       .replace(/\*\*(.*)\*\*/gim, '<strong class="font-semibold text-gray-900 dark:text-gray-100">$1</strong>')
-      // 이탤릭
       .replace(/\*(.*)\*/gim, '<em class="italic text-gray-700 dark:text-gray-300">$1</em>')
-      // 코드 블록
       .replace(/```([\s\S]*?)```/gim, '<pre class="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg overflow-x-auto my-4"><code class="text-sm text-gray-800 dark:text-gray-200">$1</code></pre>')
-      // 인라인 코드
       .replace(/`([^`]*)`/gim, '<code class="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-sm text-gray-800 dark:text-gray-200">$1</code>')
-      // 링크
       .replace(/\[([^\]]*)\]\(([^\)]*)\)/gim, '<a href="$2" class="text-blue-600 dark:text-blue-400 hover:underline" target="_blank" rel="noopener noreferrer">$1</a>')
-      // 리스트
       .replace(/^\* (.*$)/gim, '<li class="ml-4 text-gray-700 dark:text-gray-300">• $1</li>')
       .replace(/^- (.*$)/gim, '<li class="ml-4 text-gray-700 dark:text-gray-300">• $1</li>')
-      // 줄바꿈
       .replace(/\n/gim, '<br>')
   }
 
@@ -88,10 +80,38 @@ function MarkdownRenderer({ content }: { content: string }) {
   )
 }
 
-// HTML 렌더링 (실제 웹페이지로 표시)
+// HTML 렌더링 (여러 방법 제공)
 function HTMLRenderer({ content }: { content: string }) {
   const [showRaw, setShowRaw] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [renderMethod, setRenderMethod] = useState<'iframe' | 'dangerouslySetInnerHTML' | 'blob'>('iframe')
+  const iframeRef = useRef<HTMLIFrameElement>(null)
+  const [blobUrl, setBlobUrl] = useState<string>('')
+
+  // Blob URL 생성
+  useEffect(() => {
+    if (renderMethod === 'blob') {
+      const blob = new Blob([content], { type: 'text/html' })
+      const url = URL.createObjectURL(blob)
+      setBlobUrl(url)
+      
+      return () => {
+        URL.revokeObjectURL(url)
+      }
+    }
+  }, [content, renderMethod])
+
+  // iframe 강제 새로고침
+  const refreshIframe = () => {
+    if (iframeRef.current) {
+      iframeRef.current.src = 'about:blank'
+      setTimeout(() => {
+        if (iframeRef.current) {
+          iframeRef.current.srcdoc = content
+        }
+      }, 100)
+    }
+  }
 
   if (showRaw) {
     return (
@@ -124,11 +144,85 @@ function HTMLRenderer({ content }: { content: string }) {
     setIsFullscreen(!isFullscreen)
   }
 
+  const renderHTML = () => {
+    switch (renderMethod) {
+      case 'iframe':
+        return (
+          <iframe
+            ref={iframeRef}
+            srcDoc={content}
+            className={`w-full border-0 rounded-lg bg-white ${isFullscreen ? 'h-full' : 'h-96'}`}
+            title="HTML 미리보기"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-popups allow-top-navigation"
+          />
+        )
+      
+      case 'dangerouslySetInnerHTML':
+        return (
+          <div 
+            className={`w-full border border-gray-300 rounded-lg p-4 bg-white overflow-auto ${isFullscreen ? 'h-full' : 'h-96'}`}
+            dangerouslySetInnerHTML={{ __html: content }}
+          />
+        )
+      
+      case 'blob':
+        return blobUrl ? (
+          <iframe
+            src={blobUrl}
+            className={`w-full border-0 rounded-lg bg-white ${isFullscreen ? 'h-full' : 'h-96'}`}
+            title="HTML 미리보기 (Blob)"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-popups"
+          />
+        ) : (
+          <div className="flex items-center justify-center h-96 text-gray-500">
+            로딩 중...
+          </div>
+        )
+      
+      default:
+        return null
+    }
+  }
+
   return (
     <div className={`space-y-4 h-full flex flex-col ${isFullscreen ? 'fixed inset-0 z-50 bg-white dark:bg-gray-900 p-4' : ''}`}>
       <div className="flex justify-between items-center flex-shrink-0">
-        <h4 className="font-medium text-gray-900 dark:text-gray-100">HTML 미리보기</h4>
+        <div className="flex items-center space-x-4">
+          <h4 className="font-medium text-gray-900 dark:text-gray-100">HTML 미리보기</h4>
+          
+          {/* 렌더링 방법 선택 */}
+          <div className="flex space-x-1">
+            <Button 
+              size="sm" 
+              variant={renderMethod === 'iframe' ? 'default' : 'outline'}
+              onClick={() => setRenderMethod('iframe')}
+            >
+              iframe
+            </Button>
+            <Button 
+              size="sm" 
+              variant={renderMethod === 'dangerouslySetInnerHTML' ? 'default' : 'outline'}
+              onClick={() => setRenderMethod('dangerouslySetInnerHTML')}
+            >
+              직접 렌더링
+            </Button>
+            <Button 
+              size="sm" 
+              variant={renderMethod === 'blob' ? 'default' : 'outline'}
+              onClick={() => setRenderMethod('blob')}
+            >
+              Blob URL
+            </Button>
+          </div>
+        </div>
+        
         <div className="flex space-x-2">
+          {renderMethod === 'iframe' && (
+            <Button size="sm" variant="outline" onClick={refreshIframe}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              새로고침
+            </Button>
+          )}
           <Button size="sm" variant="outline" onClick={toggleFullscreen}>
             <Maximize2 className="h-4 w-4 mr-2" />
             {isFullscreen ? '축소' : '전체화면'}
@@ -143,14 +237,11 @@ function HTMLRenderer({ content }: { content: string }) {
           </Button>
         </div>
       </div>
-      <div className={`border rounded-lg bg-white dark:bg-gray-900 flex-1 ${isFullscreen ? 'h-full' : ''}`}>
-        <iframe
-          srcDoc={content}
-          className={`w-full border-0 rounded-lg ${isFullscreen ? 'h-full' : 'h-96'}`}
-          title="HTML 미리보기"
-          sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-popups"
-        />
+      
+      <div className={`border rounded-lg bg-white dark:bg-gray-100 flex-1 ${isFullscreen ? 'h-full' : ''}`}>
+        {renderHTML()}
       </div>
+      
       {isFullscreen && (
         <div className="flex justify-center">
           <Button onClick={toggleFullscreen} variant="outline">
