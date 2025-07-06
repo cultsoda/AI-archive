@@ -94,14 +94,15 @@ export default function DocumentArchivePage() {
     setShowUploadModal(true)
   }
 
+  // ✅ 실제 삭제 함수 호출
   const handleDeleteDocument = async (documentId: string) => {
-    // DocumentProvider의 deleteDocument가 자동으로 처리
     try {
-      // 삭제 로직은 DocumentProvider에서 처리
+      await deleteDocument(documentId) // 실제 삭제 함수 호출
+      console.log('문서 삭제 완료:', documentId)
     } catch (err: any) {
       console.error('문서 삭제 실패:', err)
-    }
   }
+}
 
   const handleViewDocument = (document: Document) => {
   setViewingDocument(document)
@@ -283,7 +284,7 @@ export default function DocumentArchivePage() {
         isOpen={showCategoryModal}
         onClose={() => setShowCategoryModal(false)}
       />
-      
+
       <DocumentViewer
         document={viewingDocument}
         isOpen={!!viewingDocument}

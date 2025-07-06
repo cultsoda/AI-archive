@@ -123,15 +123,22 @@ export function DocumentProvider({ children }: DocumentProviderProps) {
       setLoading(true)
       setError(null)
 
+      console.log('삭제 시작:', id) // 디버깅용
+
       const document = documents.find(doc => doc.id === id)
       if (!document) {
         throw new Error('문서를 찾을 수 없습니다.')
       }
 
+      console.log('삭제할 문서:', document.title, document.category) // 디버깅용
+
+      // Firestore에서 문서 삭제
       await documentService.deleteDocument(id)
+      console.log('Firestore에서 삭제 완료') // 디버깅용
       
       // 카테고리 카운트 업데이트
       await categoryService.updateCategoryCount(document.category, -1)
+      console.log('카테고리 카운트 업데이트 완료') // 디버깅용
       
       // 실시간 리스너가 자동으로 상태를 업데이트하므로 
       // 로컬 상태 업데이트 제거

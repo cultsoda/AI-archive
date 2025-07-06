@@ -111,7 +111,9 @@ export function DocumentCard({
 
   const handleDelete = () => {
     if (onDelete && user?.role === 'admin') {
-      if (window.confirm('이 문서를 삭제하시겠습니까?')) {
+      const confirmed = window.confirm(`"${document.title}" 문서를 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`)
+      if (confirmed) {
+        console.log('삭제 요청:', document.id, document.title) // 디버깅용
         onDelete(document.id)
       }
     }

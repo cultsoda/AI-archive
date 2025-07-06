@@ -235,8 +235,10 @@ export const documentService = {
 
   // 문서 삭제
   async deleteDocument(id: string): Promise<void> {
+    console.log('Firestore deleteDocument 호출:', id) // 디버깅용
     const docRef = doc(db, COLLECTIONS.DOCUMENTS, id)
     await deleteDoc(docRef)
+    console.log('Firestore에서 문서 삭제 완료:', id) // 디버깅용
   },
 
   // 실시간 문서 리스너
