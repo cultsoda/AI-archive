@@ -45,7 +45,7 @@ export function DocumentProvider({ children }: DocumentProviderProps) {
     }
   }, [user])
 
-  // 실시간 문서 변경 감지 (옵션)
+  // 실시간 문서 변경 감지 (로컬 상태 업데이트 제거)
   useEffect(() => {
     if (!user) return
 
@@ -72,22 +72,14 @@ export function DocumentProvider({ children }: DocumentProviderProps) {
         author: user.name,
       }
 
-      const docId = await documentService.createDocument(documentData)
+      await documentService.createDocument(documentData)
       
       // 카테고리 카운트 업데이트
       await categoryService.updateCategoryCount(data.category, 1)
       
-      // 새 문서를 로컬 상태에 추가
-      const newDocument: Document = {
-        id: docId,
-        ...documentData,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        comments: [],
-        linkedDocuments: [],
-      }
+      // 실시간 리스너가 자동으로 상태를 업데이트하므로 
+      // 로컬 상태 업데이트 제거
 
-      setDocuments(prev => [newDocument, ...prev])
     } catch (err) {
       console.error('문서 추가 실패:', err)
       setError('문서 추가에 실패했습니다.')
@@ -109,14 +101,9 @@ export function DocumentProvider({ children }: DocumentProviderProps) {
 
       await documentService.updateDocument(id, data)
       
-      // 로컬 상태 업데이트
-      setDocuments(prev => 
-        prev.map(doc => 
-          doc.id === id 
-            ? { ...doc, ...data, updatedAt: new Date().toISOString() }
-            : doc
-        )
-      )
+      // 실시간 리스너가 자동으로 상태를 업데이트하므로 
+      // 로컬 상태 업데이트 제거
+
     } catch (err) {
       console.error('문서 수정 실패:', err)
       setError('문서 수정에 실패했습니다.')
@@ -146,8 +133,9 @@ export function DocumentProvider({ children }: DocumentProviderProps) {
       // 카테고리 카운트 업데이트
       await categoryService.updateCategoryCount(document.category, -1)
       
-      // 로컬 상태에서 제거
-      setDocuments(prev => prev.filter(doc => doc.id !== id))
+      // 실시간 리스너가 자동으로 상태를 업데이트하므로 
+      // 로컬 상태 업데이트 제거
+
     } catch (err) {
       console.error('문서 삭제 실패:', err)
       setError('문서 삭제에 실패했습니다.')

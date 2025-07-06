@@ -14,6 +14,7 @@ import { CategoryModal } from '@/components/categories/CategoryModal'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { useDocuments } from '@/components/documents/DocumentProvider'
 import { useCategories } from '@/components/categories/CategoryProvider'
+import { DocumentViewer } from '@/components/documents/DocumentViewer'
 import type { Document } from '@/lib/types'
 
 export default function DocumentArchivePage() {
@@ -25,6 +26,9 @@ export default function DocumentArchivePage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+
+  //기타 추가
+  const [viewingDocument, setViewingDocument] = useState<Document | null>(null)
 
   // 모달 상태
   const [showLoginModal, setShowLoginModal] = useState(false)
@@ -100,9 +104,9 @@ export default function DocumentArchivePage() {
   }
 
   const handleViewDocument = (document: Document) => {
-    // 문서 상세보기 모달 구현 (향후 확장)
-    console.log('View document:', document)
+  setViewingDocument(document)
   }
+
 
   const handleUploadModalClose = () => {
     setShowUploadModal(false)
@@ -278,6 +282,12 @@ export default function DocumentArchivePage() {
       <CategoryModal
         isOpen={showCategoryModal}
         onClose={() => setShowCategoryModal(false)}
+      />
+      
+      <DocumentViewer
+        document={viewingDocument}
+        isOpen={!!viewingDocument}
+        onClose={() => setViewingDocument(null)}
       />
     </div>
   )
