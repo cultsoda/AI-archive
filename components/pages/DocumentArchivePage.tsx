@@ -19,7 +19,7 @@ import type { Document } from '@/lib/types'
 
 export default function DocumentArchivePage() {
   const { user } = useAuth()
-  const { documents, loading: documentsLoading } = useDocuments()
+  const { documents, loading: documentsLoading, deleteDocument } = useDocuments()
   const { categories } = useCategories()
 
   // UI 상태
