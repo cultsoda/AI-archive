@@ -100,13 +100,17 @@ export function UploadModal({
       setIsLoading(true)
       setError(null)
       
-      const documentData = {
+      const documentData: any = {
         title: form.title.trim(),
         content: form.content.trim(),
         category: form.category,
         isLocked: form.isLocked,
-        password: form.isLocked ? form.password : undefined,
         tags: (form.tags || []).filter(tag => tag.trim() !== ''),
+      }
+
+      // password 필드는 잠금이 설정된 경우에만 추가 (undefined 방지)
+      if (form.isLocked && form.password) {
+        documentData.password = form.password
       }
 
       if (editingDocument) {

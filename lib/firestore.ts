@@ -90,15 +90,28 @@ export const documentService = {
   // 문서 생성
   async createDocument(data: DocumentForm & { authorUid: string; author: string }): Promise<string> {
     const documentsRef = collection(db, COLLECTIONS.DOCUMENTS)
-    const documentData = {
-      ...data,
+    
+    // undefined 값들을 제거하고 정리된 데이터 생성
+    const cleanData: any = {
+      title: data.title,
+      content: data.content,
+      category: data.category,
+      author: data.author,
+      authorUid: data.authorUid,
+      isLocked: data.isLocked || false,
+      tags: data.tags || [],
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
       comments: [],
       linkedDocuments: [],
     }
+
+    // password가 있는 경우에만 추가
+    if (data.password) {
+      cleanData.password = data.password
+    }
     
-    const docRef = await addDoc(documentsRef, documentData)
+    const docRef = await addDoc(documentsRef, cleanData)
     return docRef.id
   },
 
@@ -155,11 +168,21 @@ export const documentService = {
   // 문서 업데이트
   async updateDocument(id: string, data: Partial<DocumentForm>): Promise<void> {
     const docRef = doc(db, COLLECTIONS.DOCUMENTS, id)
-    const updateData = {
-      ...data,
+    
+    // undefined 값들을 제거하고 정리된 데이터 생성
+    const cleanData: any = {
       updatedAt: serverTimestamp(),
     }
-    await updateDoc(docRef, updateData)
+
+    // 각 필드를 개별적으로 확인하여 undefined가 아닌 경우에만 추가
+    if (data.title !== undefined) cleanData.title = data.title
+    if (data.content !== undefined) cleanData.content = data.content
+    if (data.category !== undefined) cleanData.category = data.category
+    if (data.isLocked !== undefined) cleanData.isLocked = data.isLocked
+    if (data.tags !== undefined) cleanData.tags = data.tags
+    if (data.password !== undefined) cleanData.password = data.password
+    
+    await updateDoc(docRef, cleanData)
   },
 
   // 문서 삭제
