@@ -106,7 +106,7 @@ export function UploadModal({
         category: form.category,
         isLocked: form.isLocked,
         password: form.isLocked ? form.password : undefined,
-        tags: form.tags.filter(tag => tag.trim() !== ''),
+        tags: (form.tags || []).filter(tag => tag.trim() !== ''),
       }
 
       if (editingDocument) {
@@ -150,14 +150,14 @@ export function UploadModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
         <DialogHeader>
           <DialogTitle className="text-gray-900 dark:text-gray-100">
             {isEditMode ? '문서 수정' : '새 문서 업로드'}
           </DialogTitle>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
           {/* 에러 메시지 */}
           {error && (
             <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
@@ -166,15 +166,15 @@ export function UploadModal({
           )}
 
           {/* 제목 */}
-          <div>
-            <Label htmlFor="title" className="text-gray-700 dark:text-gray-300">
+          <div className="space-y-2">
+            <Label htmlFor="title" className="text-gray-700 dark:text-gray-300 font-medium">
               제목 *
             </Label>
             <Input
               id="title"
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
-              className="bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600"
+              className="bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100"
               placeholder="문서 제목을 입력하세요"
               required
               disabled={isLoading}
@@ -182,56 +182,71 @@ export function UploadModal({
           </div>
 
           {/* 카테고리 */}
-          <div>
-            <Label htmlFor="category" className="text-gray-700 dark:text-gray-300">
+          <div className="space-y-2">
+            <Label htmlFor="category" className="text-gray-700 dark:text-gray-300 font-medium">
               카테고리 *
             </Label>
-            <Select
-              value={form.category}
-              onValueChange={(value) => setForm({ ...form, category: value })}
-              disabled={isLoading}
-            >
-              <SelectTrigger className="bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600">
-                <SelectValue placeholder="카테고리를 선택하세요" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((category) => (
-                  <SelectItem key={category.id} value={category.name}>
-                    {category.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {categories.length === 0 ? (
+              <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                <p className="text-yellow-800 dark:text-yellow-300 text-sm">
+                  사용 가능한 카테고리가 없습니다. 먼저 카테고리를 생성해주세요.
+                </p>
+              </div>
+            ) : (
+              <Select
+                value={form.category}
+                onValueChange={(value) => setForm({ ...form, category: value })}
+                disabled={isLoading}
+              >
+                <SelectTrigger className="w-full bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100">
+                  <SelectValue placeholder="카테고리를 선택하세요" />
+                </SelectTrigger>
+                <SelectContent className="bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600">
+                  {categories.map((category) => (
+                    <SelectItem 
+                      key={category.id} 
+                      value={category.name}
+                      className="text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-600 focus:bg-gray-100 dark:focus:bg-gray-600"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <div className={`w-3 h-3 rounded-full ${category.color.split(' ')[0]}`}></div>
+                        <span>{category.name}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
           {/* 태그 */}
-          <div>
-            <Label htmlFor="tags" className="text-gray-700 dark:text-gray-300">
+          <div className="space-y-2">
+            <Label htmlFor="tags" className="text-gray-700 dark:text-gray-300 font-medium">
               태그 (선택사항)
             </Label>
             <Input
               id="tags"
-              value={form.tags?.join(', ') || ''}
+              value={(form.tags || []).join(', ')}
               onChange={(e) => handleTagsChange(e.target.value)}
-              className="bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600"
+              className="bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100"
               placeholder="태그1, 태그2, 태그3 (쉼표로 구분)"
               disabled={isLoading}
             />
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
               쉼표로 구분하여 여러 태그를 입력할 수 있습니다
             </p>
           </div>
 
           {/* 내용 */}
-          <div>
-            <Label htmlFor="content" className="text-gray-700 dark:text-gray-300">
+          <div className="space-y-2">
+            <Label htmlFor="content" className="text-gray-700 dark:text-gray-300 font-medium">
               내용 *
             </Label>
             <Textarea
               id="content"
               value={form.content}
               onChange={(e) => setForm({ ...form, content: e.target.value })}
-              className="bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 min-h-[200px]"
+              className="bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100 min-h-[200px] resize-y"
               placeholder="문서 내용을 입력하세요"
               rows={8}
               required
@@ -239,30 +254,33 @@ export function UploadModal({
             />
           </div>
 
-          {/* 보안 설정 (향후 확장용) */}
-          <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
-            <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">보안 설정</h4>
+          {/* 보안 설정 */}
+          <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg space-y-3">
+            <h4 className="font-medium text-gray-900 dark:text-gray-100">보안 설정</h4>
             <div className="flex items-center space-x-2">
               <input
                 type="checkbox"
                 id="isLocked"
                 checked={form.isLocked}
                 onChange={(e) => setForm({ ...form, isLocked: e.target.checked })}
-                className="rounded border-gray-300"
+                className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
                 disabled={isLoading}
               />
-              <Label htmlFor="isLocked" className="text-sm text-gray-700 dark:text-gray-300">
+              <Label htmlFor="isLocked" className="text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
                 문서 잠금 (비밀번호 필요)
               </Label>
             </div>
             
             {form.isLocked && (
-              <div className="mt-3">
+              <div className="space-y-2">
+                <Label className="text-sm text-gray-700 dark:text-gray-300">
+                  잠금 비밀번호
+                </Label>
                 <Input
                   type="password"
                   value={form.password}
                   onChange={(e) => setForm({ ...form, password: e.target.value })}
-                  className="bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600"
+                  className="bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100"
                   placeholder="문서 잠금 비밀번호"
                   disabled={isLoading}
                 />
@@ -271,20 +289,20 @@ export function UploadModal({
           </div>
 
           {/* 버튼들 */}
-          <div className="flex justify-end space-x-2 pt-4">
+          <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-600">
             <Button
               type="button"
               variant="outline"
               onClick={handleClose}
               disabled={isLoading}
-              className="border-gray-200 dark:border-gray-600"
+              className="border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
             >
               취소
             </Button>
             <Button 
               type="submit" 
-              disabled={isLoading}
-              className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+              disabled={isLoading || categories.length === 0}
+              className="bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading 
                 ? (isEditMode ? '수정 중...' : '업로드 중...') 
