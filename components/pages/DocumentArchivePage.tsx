@@ -37,22 +37,26 @@ export default function DocumentArchivePage() {
   const [isDark, setIsDark] = useState(false)
 
   useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-    setIsDark(mediaQuery.matches)
+    if (typeof window !== 'undefined') {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+      setIsDark(mediaQuery.matches)
 
-    const handleChange = (e: MediaQueryListEvent) => {
-      setIsDark(e.matches)
+      const handleChange = (e: MediaQueryListEvent) => {
+        setIsDark(e.matches)
+      }
+
+      mediaQuery.addEventListener('change', handleChange)
+      return () => mediaQuery.removeEventListener('change', handleChange)
     }
-
-    mediaQuery.addEventListener('change', handleChange)
-    return () => mediaQuery.removeEventListener('change', handleChange)
   }, [])
 
   useEffect(() => {
-    if (isDark) {
-      document.documentElement.classList.add('dark')
-    } else {
-      document.documentElement.classList.remove('dark')
+    if (typeof document !== 'undefined') {
+      if (isDark) {
+        document.documentElement.classList.add('dark')
+      } else {
+        document.documentElement.classList.remove('dark')
+      }
     }
   }, [isDark])
 
@@ -88,6 +92,11 @@ export default function DocumentArchivePage() {
 
   const handleDeleteDocument = async (documentId: string) => {
     // DocumentProvider의 deleteDocument가 자동으로 처리
+    try {
+      // 삭제 로직은 DocumentProvider에서 처리
+    } catch (err: any) {
+      console.error('문서 삭제 실패:', err)
+    }
   }
 
   const handleViewDocument = (document: Document) => {
