@@ -72,16 +72,17 @@ export function UploadModal({
   // 수정 모드일 때 폼 초기화
   useEffect(() => {
     if (editingDocument) {
+      const docType = editingDocument.documentType || 'text'
       setForm({
         title: editingDocument.title,
         content: editingDocument.content,
         category: editingDocument.category,
-        documentType: editingDocument.documentType || 'text',
+        documentType: docType,
         isLocked: editingDocument.isLocked || false,
         password: editingDocument.password || '',
         tags: editingDocument.tags || [],
       })
-      setDocumentType(editingDocument.documentType || 'text')
+      setDocumentType(docType)
       setTagInput((editingDocument.tags || []).join(', '))
     } else {
       setForm({
@@ -98,6 +99,11 @@ export function UploadModal({
     }
     setError(null)
   }, [editingDocument, isOpen])
+
+  // documentType이 변경될 때 form도 업데이트
+  useEffect(() => {
+    setForm(prev => ({ ...prev, documentType }))
+  }, [documentType])
 
   const validateForm = (): string | null => {
     if (!form.title.trim()) {
@@ -137,19 +143,24 @@ export function UploadModal({
       setIsLoading(true)
       setError(null)
       
+      // 태그 처리
+      const processedTags = tagInput.split(',').map(tag => tag.trim()).filter(tag => tag !== '')
+      
       const documentData: DocumentForm = {
         title: form.title.trim(),
         content: form.content.trim(),
         category: form.category,
-        documentType: documentType,
+        documentType: documentType, // 여기가 핵심!
         isLocked: form.isLocked,
-        tags: tagInput.split(',').map(tag => tag.trim()).filter(tag => tag !== ''),
+        tags: processedTags,
       }
 
       // password 필드는 잠금이 설정된 경우에만 추가
       if (form.isLocked && form.password) {
         documentData.password = form.password
       }
+
+      console.log('업로드할 문서 데이터:', documentData) // 디버깅용
 
       if (editingDocument) {
         await updateDocument(editingDocument.id, documentData)
@@ -230,7 +241,10 @@ export function UploadModal({
     // 내용이 충분히 있을 때만 자동 감지
     if (content.trim().length > 50) {
       const detectedType = detectDocumentType(content)
-      setDocumentType(detectedType)
+      // 자동 감지된 타입으로 업데이트
+      if (detectedType !== documentType) {
+        console.log('자동 감지된 타입:', detectedType) // 디버깅용
+      }
     }
   }
 
@@ -276,11 +290,17 @@ export function UploadModal({
           {/* 문서 타입 선택 */}
           <div className="space-y-2">
             <Label htmlFor="documentType" className="text-gray-700 dark:text-gray-300 font-medium">
-              문서 타입 *
+              문서 타입 * 
+              <span className="text-sm text-gray-500 ml-2">
+                현재 선택: {documentTypeOptions.find(opt => opt.value === documentType)?.label}
+              </span>
             </Label>
             <Select
               value={documentType}
-              onValueChange={(value: DocumentType) => setDocumentType(value)}
+              onValueChange={(value: DocumentType) => {
+                console.log('문서 타입 변경:', value) // 디버깅용
+                setDocumentType(value)
+              }}
               disabled={isLoading}
             >
               <SelectTrigger className="w-full bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100">
