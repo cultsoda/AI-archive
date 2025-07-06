@@ -10,17 +10,35 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useDocuments } from '@/components/documents/DocumentProvider'
 import { useCategories } from '@/components/categories/CategoryProvider'
 import { useAuth } from '@/components/auth/AuthProvider'
-import type { Document, DocumentForm } from '@/lib/types'
+import type { Document, DocumentForm, DocumentType } from '@/lib/types'
 
-// 문서 타입 정의
-export type DocumentType = 'text' | 'html' | 'csv' | 'markdown'
-
-interface DocumentTypeOption {
-  value: DocumentType
-  label: string
-  description: string
-  icon: string
-}
+// 문서 타입 옵션 정의
+const documentTypeOptions = [
+  {
+    value: 'text' as DocumentType,
+    label: '텍스트',
+    description: '일반 텍스트 문서',
+    icon: '📝'
+  },
+  {
+    value: 'html' as DocumentType,
+    label: 'HTML',
+    description: 'HTML 웹 페이지',
+    icon: '🌐'
+  },
+  {
+    value: 'csv' as DocumentType,
+    label: 'CSV',
+    description: '표 형태의 데이터',
+    icon: '📊'
+  },
+  {
+    value: 'markdown' as DocumentType,
+    label: 'Markdown',
+    description: '마크다운 문서',
+    icon: '📄'
+  }
+]
 
 interface UploadModalProps {
   isOpen: boolean
@@ -41,11 +59,14 @@ export function UploadModal({
     title: '',
     content: '',
     category: '',
+    documentType: 'text',
     isLocked: false,
     password: '',
     tags: [],
   })
+  const [documentType, setDocumentType] = useState<DocumentType>('text')
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [tagInput, setTagInput] = useState<string>('')
 
   // 수정 모드일 때 폼 초기화
@@ -55,23 +76,25 @@ export function UploadModal({
         title: editingDocument.title,
         content: editingDocument.content,
         category: editingDocument.category,
+        documentType: editingDocument.documentType || 'text',
         isLocked: editingDocument.isLocked || false,
         password: editingDocument.password || '',
         tags: editingDocument.tags || [],
       })
+      setDocumentType(editingDocument.documentType || 'text')
       setTagInput((editingDocument.tags || []).join(', '))
     } else {
       setForm({
         title: '',
         content: '',
         category: '',
+        documentType: 'text',
         isLocked: false,
         password: '',
         tags: [],
       })
       setDocumentType('text')
-              setDocumentType('text')
-        setTagInput('')
+      setTagInput('')
     }
     setError(null)
   }, [editingDocument, isOpen])
@@ -114,7 +137,7 @@ export function UploadModal({
       setIsLoading(true)
       setError(null)
       
-      const documentData: any = {
+      const documentData: DocumentForm = {
         title: form.title.trim(),
         content: form.content.trim(),
         category: form.category,
@@ -123,7 +146,7 @@ export function UploadModal({
         tags: tagInput.split(',').map(tag => tag.trim()).filter(tag => tag !== ''),
       }
 
-      // password 필드는 잠금이 설정된 경우에만 추가 (undefined 방지)
+      // password 필드는 잠금이 설정된 경우에만 추가
       if (form.isLocked && form.password) {
         documentData.password = form.password
       }
@@ -150,10 +173,12 @@ export function UploadModal({
         title: '',
         content: '',
         category: '',
+        documentType: 'text',
         isLocked: false,
         password: '',
         tags: [],
       })
+      setDocumentType('text')
       setTagInput('')
       setError(null)
       onClose()

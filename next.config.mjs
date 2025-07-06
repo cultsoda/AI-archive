@@ -9,9 +9,7 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  experimental: {
-    serverComponentsExternalPackages: ['firebase', 'firebase-admin'],
-  },
+  serverExternalPackages: ['firebase', 'firebase-admin'],
   webpack: (config, { isServer }) => {
     if (!isServer) {
       config.resolve.fallback = {
