@@ -6,6 +6,7 @@ import {
   deleteDoc,
   getDocs,
   getDoc,
+  setDoc,
   query,
   where,
   orderBy,
@@ -46,7 +47,8 @@ export const userService = {
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     }
-    await updateDoc(userRef, profileData)
+    // updateDoc 대신 setDoc 사용 (문서가 존재하지 않을 수 있으므로)
+    await setDoc(userRef, profileData)
     return profileData
   },
 
