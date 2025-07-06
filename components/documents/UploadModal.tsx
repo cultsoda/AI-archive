@@ -36,7 +36,7 @@ export function UploadModal({
     tags: [],
   })
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [tagInput, setTagInput] = useState<string>('')
 
   // 수정 모드일 때 폼 초기화
   useEffect(() => {
@@ -49,6 +49,7 @@ export function UploadModal({
         password: editingDocument.password || '',
         tags: editingDocument.tags || [],
       })
+      setTagInput((editingDocument.tags || []).join(', '))
     } else {
       setForm({
         title: '',
@@ -58,6 +59,7 @@ export function UploadModal({
         password: '',
         tags: [],
       })
+      setTagInput('')
     }
     setError(null)
   }, [editingDocument, isOpen])
@@ -105,7 +107,7 @@ export function UploadModal({
         content: form.content.trim(),
         category: form.category,
         isLocked: form.isLocked,
-        tags: (form.tags || []).filter(tag => tag.trim() !== ''),
+        tags: tagInput.split(',').map(tag => tag.trim()).filter(tag => tag !== ''),
       }
 
       // password 필드는 잠금이 설정된 경우에만 추가 (undefined 방지)
@@ -139,15 +141,14 @@ export function UploadModal({
         password: '',
         tags: [],
       })
+      setTagInput('')
       setError(null)
       onClose()
     }
   }
 
-  const handleTagsChange = (value: string) => {
-    // 쉼표로 구분된 태그들을 배열로 변환
-    const tags = value.split(',').map(tag => tag.trim()).filter(tag => tag !== '')
-    setForm({ ...form, tags })
+  const handleTagInputChange = (value: string) => {
+    setTagInput(value)
   }
 
   const isEditMode = !!editingDocument
@@ -230,8 +231,8 @@ export function UploadModal({
             </Label>
             <Input
               id="tags"
-              value={(form.tags || []).join(', ')}
-              onChange={(e) => handleTagsChange(e.target.value)}
+              value={tagInput}
+              onChange={(e) => handleTagInputChange(e.target.value)}
               className="bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100"
               placeholder="태그1, 태그2, 태그3 (쉼표로 구분)"
               disabled={isLoading}
@@ -239,6 +240,23 @@ export function UploadModal({
             <p className="text-xs text-gray-500 dark:text-gray-400">
               쉼표로 구분하여 여러 태그를 입력할 수 있습니다
             </p>
+            {/* 태그 미리보기 */}
+            {tagInput && (
+              <div className="flex flex-wrap gap-1 mt-2">
+                {tagInput.split(',').map((tag, index) => {
+                  const trimmedTag = tag.trim()
+                  if (!trimmedTag) return null
+                  return (
+                    <span
+                      key={index}
+                      className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                    >
+                      {trimmedTag}
+                    </span>
+                  )
+                })}
+              </div>
+            )}
           </div>
 
           {/* 내용 */}
